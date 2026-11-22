@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teacher Availability & Attendance Checker</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-focus: rgba(37, 99, 235, 0.2);
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --border-focus: #3b82f6;
+      --success-bg: #ecfdf5;
+      --success-border: #6ee7b7;
+      --success-text: #065f46;
+      --danger-bg: #fef2f2;
+      --danger-border: #fca5a5;
+      --danger-text: #991b1b;
+      --warning-bg: #fffbeb;
+      --warning-border: #fde68a;
+      --warning-text: #92400e;
+      --radius: 12px;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      line-height: 1.5;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      margin: auto;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 24px 24px 16px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    .card-header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+
+    .card-header p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 8px;
+    }
+
+    .select-wrapper {
+      position: relative;
+    }
+
+    select {
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 40px 12px 14px;
+      font-size: 1rem;
+      color: var(--text);
+      background-color: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    select:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--primary-focus);
+    }
+
+    select.is-invalid {
+      border-color: #ef4444;
+      background-color: #fffaf0;
+    }
+
+    select:disabled {
+      background-color: #f1f5f9;
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    select option:disabled {
+      color: #94a3b8;
+      background-color: #f8fafc;
+    }
+
+    .select-arrow {
+      position: absolute;
+      top: 50%;
+      right: 14px;
+      pointer-events: none;
+      width: 10px;
+      height: 10px;
+      border-right: 2px solid #64748b;
+      border-bottom: 2px solid #64748b;
+      transform: translateY(-70%) rotate(45deg);
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 50px;
+      padding: 14px 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.025em;
+      text-transform: uppercase;
+      color: #ffffff;
+      background-color: var(--primary);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: background-color 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.99);
+    }
+
+    .btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      border-top-color: #ffffff;
+      animation: spin 0.7s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .alert {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      border: 1.5px solid transparent;
+      display: none;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .alert-success {
+      background-color: var(--success-bg);
+      border-color: var(--success-border);
+      color: var(--success-text);
+    }
+
+    .alert-danger {
+      background-color: var(--danger-bg);
+      border-color: var(--danger-border);
+      color: var(--danger-text);
+    }
+
+    .alert-warning {
+      background-color: var(--warning-bg);
+      border-color: var(--warning-border);
+      color: var(--warning-text);
+    }
+
+    .alert-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .alert-details {
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    /* Separate status badges for Timetable and Attendance */
+    .status-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin: 12px 0 10px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.75);
+      border-radius: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    @media (min-width: 380px) {
+      .status-grid.dual-col {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .status-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .status-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.8;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 6px;
+      width: fit-content;
+    }
+
+    .badge-success {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+
+    .badge-danger {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+
+    .badge-warning {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+
+    .alert-message {
+      font-size: 0.9rem;
+      margin-top: 6px;
+      line-height: 1.45;
+    }
+
+    .footer-note {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h1>Teacher Availability & Attendance</h1>
+        <p>Check schedule and attendance availability</p>
+      </div>
+
+      <div class="card-body">
+        <form id="availability-form" novalidate>
+          <!-- Teacher Name Dropdown -->
+          <div class="form-group">
+            <label class="form-label" for="teacher-select">Teacher Name</label>
+            <div class="select-wrapper">
+              <select id="teacher-select" name="name" required>
+                <option value="">-- Loading teachers... --</option>
+              </select>
+              <div class="select-arrow"></div>
+            </div>
+          </div>
+
+          <!-- Day Dropdown (Monday to Saturday, past days disabled) -->
+          <div class="form-group">
+            <label class="form-label" for="day-select">Day</label>
+            <div class="select-wrapper">
+              <select id="day-select" name="day" required>
+                <option value="">-- Select Day --</option>
+                <option value="mon">Monday</option>
+                <option value="tues">Tuesday</option>
+                <option value="wed">Wednesday</option>
+                <option value="thurs">Thursday</option>
+                <option value="fri">Friday</option>
+                <option value="sat">Saturday</option>
+              </select>
+              <div class="select-arrow"></div>
+            </div>
+          </div>
+
+          <!-- Period Dropdown (Seven timings supported by Go backend) -->
+          <div class="form-group">
+            <label class="form-label" for="period-select">Period</label>
+            <div class="select-wrapper">
+              <select id="period-select" name="period" required>
+                <option value="">-- Select Period --</option>
+                <option value="9:00-10:00">Period 1 (9:00-10:00)</option>
+                <option value="10:00-10:50">Period 2 (10:00-10:50)</option>
+                <option value="11:10-12:00">Period 3 (11:10-12:00)</option>
+                <option value="12:00-1:00">Period 4 (12:00-1:00)</option>
+                <option value="1:45-2:45">Period 5 (1:45-2:45)</option>
+                <option value="2:45-3:45">Period 6 (2:45-3:45)</option>
+                <option value="3:45-4:45">Period 7 (3:45-4:45)</option>
+              </select>
+              <div class="select-arrow"></div>
+            </div>
+          </div>
+
+          <!-- Check Availability Button -->
+          <button type="submit" id="check-btn" class="btn">
+            CHECK AVAILABILITY
+          </button>
+        </form>
+
+        <!-- Dynamic Result & Notification Area -->
+        <div id="result-box" class="alert" role="alert" aria-live="polite"></div>
+      </div>
+    </div>
+    <p class="footer-note">Powered by Svara-Vedha</p>
+  </div>
+
+  <script>
+    const form = document.getElementById('availability-form');
+    const teacherSelect = document.getElementById('teacher-select');
+    const daySelect = document.getElementById('day-select');
+    const periodSelect = document.getElementById('period-select');
+    const checkBtn = document.getElementById('check-btn');
+    const resultBox = document.getElementById('result-box');
+
+    // Duplicate request prevention flag
+    let isChecking = false;
+
+    // Automatically resolve API target:
+    // When served directly from Go (http://localhost:8080), use relative path.
+    // If opened via file:// or another port (e.g. Live Server on 5500), target http://localhost:8080.
+    const isLocalFile = window.location.protocol === 'file:';
+    const isDifferentPort = window.location.port && window.location.port !== '8080';
+    const API_BASE = (isLocalFile || isDifferentPort) ? 'http://localhost:8080' : '';
+
+    // Clear alert message
+    function clearMessage() {
+      resultBox.className = 'alert';
+      resultBox.innerHTML = '';
+      resultBox.style.display = 'none';
+    }
+
+    // Generic alert message
+    function showGenericMessage(title, message, type) {
+      resultBox.className = 'alert alert-' + type;
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = `
+        <div class="alert-title">${title}</div>
+        ${message ? `<div class="alert-details">${message}</div>` : ''}
+      `;
+      resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Display result for TODAY with separate Timetable Status and Attendance Status
+    function showTodayResult(overallTitle, timetableStatus, isClassScheduled, attendanceStatus, isTeacherPresent, message, type) {
+      resultBox.className = 'alert alert-' + type;
+      resultBox.style.display = 'block';
+
+      const timetableBadgeClass = isClassScheduled ? 'badge-danger' : 'badge-success';
+      const attendanceBadgeClass = isTeacherPresent ? 'badge-success' : 'badge-danger';
+
+      resultBox.innerHTML = `
+        <div class="alert-title">${overallTitle}</div>
+        <div class="status-grid dual-col">
+          <div class="status-item">
+            <span class="status-label">Timetable Status</span>
+            <span class="status-badge ${timetableBadgeClass}">${timetableStatus}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Attendance Status</span>
+            <span class="status-badge ${attendanceBadgeClass}">${attendanceStatus}</span>
+          </div>
+        </div>
+        <div class="alert-message">${message}</div>
+      `;
+      resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Display result for FUTURE day with ONLY Timetable Status (No attendance section)
+    function showFutureResult(overallTitle, timetableStatus, isClassScheduled, message, type) {
+      resultBox.className = 'alert alert-' + type;
+      resultBox.style.display = 'block';
+
+      const timetableBadgeClass = isClassScheduled ? 'badge-danger' : 'badge-success';
+
+      resultBox.innerHTML = `
+        <div class="alert-title">${overallTitle}</div>
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="status-label">Timetable Status</span>
+            <span class="status-badge ${timetableBadgeClass}">${timetableStatus}</span>
+          </div>
+        </div>
+        <div class="alert-message">${message}</div>
+      `;
+      resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Date selection initialization:
+    // Dynamically determines current date, disables past days, and sets metadata for date comparisons.
+    function setupDayDropdown() {
+      const now = new Date();
+      // Normalized today at midnight for accurate date comparison
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const currentDayOfWeek = now.getDay(); // 0 = Sunday, 1 = Mon, ..., 6 = Sat
+
+      const timetableDays = [
+        { key: 'mon', name: 'Monday', dayIndex: 1 },
+        { key: 'tues', name: 'Tuesday', dayIndex: 2 },
+        { key: 'wed', name: 'Wednesday', dayIndex: 3 },
+        { key: 'thurs', name: 'Thursday', dayIndex: 4 },
+        { key: 'fri', name: 'Friday', dayIndex: 5 },
+        { key: 'sat', name: 'Saturday', dayIndex: 6 }
+      ];
+
+      // Calculate Monday of the current schedule week
+      // If today is Sunday (0), timetable schedule rolls into the upcoming Monday (+1 day)
+      const diffToMonday = currentDayOfWeek === 0 ? 1 : 1 - currentDayOfWeek;
+      const mondayDate = new Date(today);
+      mondayDate.setDate(today.getDate() + diffToMonday);
+
+      daySelect.innerHTML = '<option value="">-- Select Day --</option>';
+
+      timetableDays.forEach(day => {
+        const targetDate = new Date(mondayDate);
+        targetDate.setDate(mondayDate.getDate() + (day.dayIndex - 1));
+
+        // Use actual timestamp values for date comparison
+        const isPast = targetDate.getTime() < today.getTime();
+        const isToday = targetDate.getTime() === today.getTime();
+
+        const opt = document.createElement('option');
+        opt.value = day.key;
+        opt.dataset.date = targetDate.toISOString().split('T')[0];
+        opt.dataset.isToday = isToday ? 'true' : 'false';
+        opt.dataset.dayName = day.name;
+
+        if (isPast) {
+          opt.disabled = true;
+          opt.textContent = `${day.name} (Past - Not Selectable)`;
+        } else if (isToday) {
+          opt.textContent = `${day.name} (Today)`;
+        } else {
+          opt.textContent = `${day.name}`;
+        }
+
+        daySelect.appendChild(opt);
+      });
+    }
+
+    // Populate Teacher dropdown on page load
+    async function loadTeachers() {
+      teacherSelect.disabled = true;
+      teacherSelect.innerHTML = '<option value="">-- Loading teachers... --</option>';
+      clearMessage();
+
+      try {
+        let response;
+        try {
+          response = await fetch(`${API_BASE}/teachers`);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        } catch (e) {
+          // Fallback to / with JSON Accept header
+          response = await fetch(`${API_BASE}/`, {
+            headers: { 'Accept': 'application/json' }
+          });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        }
+
+        const teachers = await response.json();
+        teacherSelect.innerHTML = '<option value="">-- Select Teacher --</option>';
+
+        if (Array.isArray(teachers) && teachers.length > 0) {
+          // Filter out empty/whitespace-only records and duplicates from the database
+          const validTeachers = [...new Set(
+            teachers
+              .map(name => (typeof name === 'string' ? name.trim() : ''))
+              .filter(name => name.length > 0)
+          )];
+
+          if (validTeachers.length > 0) {
+            validTeachers.forEach(name => {
+              const opt = document.createElement('option');
+              opt.value = name;
+              opt.textContent = name;
+              teacherSelect.appendChild(opt);
+            });
+          } else {
+            teacherSelect.innerHTML = '<option value="">-- No teachers available --</option>';
+            showGenericMessage(
+              'No Teachers Found',
+              'The database connected, but no valid teacher names were found.',
+              'warning'
+            );
+          }
+        } else {
+          teacherSelect.innerHTML = '<option value="">-- No teachers available --</option>';
+          showGenericMessage(
+            'No Teachers Found',
+            'The backend connected, but the database returned 0 teacher records.',
+            'warning'
+          );
+        }
+      } catch (err) {
+        console.error('Error fetching teachers:', err);
+        teacherSelect.innerHTML = '<option value="">-- Failed to load teachers --</option>';
+        const hint = isLocalFile
+          ? 'You opened this file directly from your disk (<code>file://</code>). Start your Go backend in terminal: <code>go run main.go</code>, and open <a href="http://localhost:8080" target="_blank">http://localhost:8080</a> in your browser.'
+          : `Could not connect to the Go backend (${err.message || 'connection error'}). Ensure <code>go run main.go</code> is actively running in your terminal on port 8080.`;
+        showGenericMessage('Connection Error', hint, 'warning');
+      } finally {
+        teacherSelect.disabled = false;
+      }
+    }
+
+    // Clear validation styling on selection change
+    [teacherSelect, daySelect, periodSelect].forEach(select => {
+      select.addEventListener('change', () => {
+        if (select.value) {
+          select.classList.remove('is-invalid');
+        }
+      });
+    });
+
+    // Handle Check Availability button click
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      // Prevent duplicate requests while a request is already processing
+      if (isChecking) {
+        return;
+      }
+
+      const teacherName = teacherSelect.value.trim();
+      const day = daySelect.value.trim();
+      const period = periodSelect.value.trim();
+
+      // Reset invalid states
+      teacherSelect.classList.remove('is-invalid');
+      daySelect.classList.remove('is-invalid');
+      periodSelect.classList.remove('is-invalid');
+
+      // Validation
+      let isValid = true;
+      const missingFields = [];
+
+      if (!teacherName) {
+        teacherSelect.classList.add('is-invalid');
+        missingFields.push('Teacher Name');
+        isValid = false;
+      }
+      if (!day) {
+        daySelect.classList.add('is-invalid');
+        missingFields.push('Day');
+        isValid = false;
+      }
+      if (!period) {
+        periodSelect.classList.add('is-invalid');
+        missingFields.push('Period');
+        isValid = false;
+      }
+
+      if (!isValid) {
+        showGenericMessage(
+          'Missing Selection',
+          `Please select: ${missingFields.join(', ')}.`,
+          'warning'
+        );
+        return;
+      }
+
+      // Validate selected date using actual Date values (prevent past day submission)
+      const selectedOption = daySelect.options[daySelect.selectedIndex];
+      const selectedDateStr = selectedOption.dataset.date;
+      const selectedDate = new Date(selectedDateStr + 'T00:00:00');
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      if (selectedDate.getTime() < today.getTime()) {
+        daySelect.classList.add('is-invalid');
+        showGenericMessage(
+          'Invalid Date Selection',
+          'Past days cannot be selected. Please choose Today or a Future day.',
+          'warning'
+        );
+        return;
+      }
+
+      // Determine whether selected date is TODAY using actual Date comparison
+      const isToday = selectedDate.getTime() === today.getTime();
+      const dayName = selectedOption.dataset.dayName || selectedOption.text;
+
+      isChecking = true;
+      checkBtn.disabled = true;
+      checkBtn.innerHTML = '<span class="spinner"></span> CHECKING AVAILABILITY...';
+
+      try {
+        const queryParams = new URLSearchParams({
+          name: teacherName,
+          day: day,
+          period: period,
+          isToday: isToday ? 'true' : 'false'
+        });
+
+        const res = await fetch(`${API_BASE}/check?${queryParams.toString()}`);
+        if (!res.ok) {
+          throw new Error(`Server returned HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        // Interpret backend response:
+        // Handles structured response { isAccepted, isPresent } or fallback boolean
+        let isAccepted = false;
+        let isPresent = null;
+
+        if (typeof data === 'boolean') {
+          isAccepted = data;
+        } else if (typeof data === 'object' && data !== null) {
+          isAccepted = data.isAccepted ?? data.IsAccepted ?? false;
+          if ('isPresent' in data || 'IsPresent' in data) {
+            isPresent = data.isPresent ?? data.IsPresent ?? false;
+          }
+        }
+
+        if (isToday) {
+          // --- RESULT LOGIC FOR TODAY ---
+          // Both Timetable Status and Attendance Status are displayed
+          // IsAccepted: true = Class Scheduled, false = No Class Scheduled
+          // IsPresent: true = Present, false = Absent
+
+          if (isPresent === null) {
+            // Backend returned a single boolean without separate attendance
+            if (isAccepted) {
+              showTodayResult(
+                '✕ Not Available',
+                'Class Scheduled',
+                true,
+                'Status Unknown',
+                false,
+                `The teacher has a scheduled class during this period.`,
+                'danger'
+              );
+            } else {
+              showTodayResult(
+                '✓ Available',
+                'No Class Scheduled',
+                false,
+                'Status Unknown',
+                true,
+                `The teacher has no scheduled class during this period.`,
+                'success'
+              );
+            }
+          } else if (isAccepted === true && isPresent === true) {
+            // Case 1: IsAccepted = true AND IsPresent = true
+            showTodayResult(
+              '✕ Not Available',
+              'Class Scheduled',
+              true,
+              'Present',
+              true,
+              'The teacher has a scheduled class during this period and is present.',
+              'danger'
+            );
+          } else if (isAccepted === true && isPresent === false) {
+            // Case 2: IsAccepted = true AND IsPresent = false
+            showTodayResult(
+              '✕ Not Available',
+              'Class Scheduled',
+              true,
+              'Absent',
+              false,
+              'The teacher has a scheduled class during this period but is absent.',
+              'danger'
+            );
+          } else if (isAccepted === false && isPresent === true) {
+            // Case 3: IsAccepted = false AND IsPresent = true
+            showTodayResult(
+              '✓ Available',
+              'No Class Scheduled',
+              false,
+              'Present',
+              true,
+              'The teacher has no scheduled class during this period and is present.',
+              'success'
+            );
+          } else {
+            // Case 4: IsAccepted = false AND IsPresent = false
+            showTodayResult(
+              '⚠ Available but Absent',
+              'No Class Scheduled',
+              false,
+              'Absent',
+              false,
+              'The teacher has no scheduled class during this period, but the teacher is absent.',
+              'warning'
+            );
+          }
+        } else {
+          // --- RESULT LOGIC FOR FUTURE DAYS ---
+          // Perform ONLY timetable check; Attendance is NOT checked or displayed
+          if (isAccepted === true) {
+            // Case 1: IsAccepted = true
+            showFutureResult(
+              '✕ Not Available',
+              'Class Scheduled',
+              true,
+              'The teacher has a scheduled class during this period.',
+              'danger'
+            );
+          } else {
+            // Case 2: IsAccepted = false
+            showFutureResult(
+              '✓ Available',
+              'No Class Scheduled',
+              false,
+              'The teacher has no scheduled class during this period.',
+              'success'
+            );
+          }
+        }
+      } catch (error) {
+        console.error('Check failed:', error);
+        showGenericMessage(
+          'Error Checking Availability',
+          `Could not verify availability due to a server or database error (${error.message || 'connection failed'}). Please check your backend connection.`,
+          'danger'
+        );
+      } finally {
+        isChecking = false;
+        checkBtn.disabled = false;
+        checkBtn.innerHTML = 'CHECK AVAILABILITY';
+      }
+    });
+
+    // Initialize day options with dynamic date evaluation and teacher list
+    setupDayDropdown();
+    loadTeachers();
+  </script>
+</body>
+</html>

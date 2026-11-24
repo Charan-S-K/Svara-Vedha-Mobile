@@ -98,14 +98,29 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("failed to load env")
-		return
+	// Load local .env if available.
+	// On Render, environment variables come from the dashboard.
+	if err := godotenv.Load(); err != nil {
+		fmt.Println("No .env file found; using system environment variables")
 	}
+
 	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	// Support both :8080 locally and 10000 on Render.
+	port = strings.TrimPrefix(port, ":")
+
 	http.HandleFunc("/", serveHome)
 	http.HandleFunc("/teachers", GetData)
 	http.HandleFunc("/check", checker)
-	http.ListenAndServe(port, nil)
+
+	address := "0.0.0.0:" + port
+
+	fmt.Println("Server running on", address)
+
+	if err := http.ListenAndServe(address, nil); err != nil {
+		fmt.Println("Server failed:", err)
+	}
 }

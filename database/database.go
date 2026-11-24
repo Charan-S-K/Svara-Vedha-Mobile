@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -88,11 +87,6 @@ func Check(Name, Day, Period string) {
 	// Name = strings.ToLower(Name)
 	Day = strings.ToLower(Day)
 	Period = strings.ToLower(Period)
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("loading env failed", err)
-		return
-	}
 	uri := os.Getenv("MONGODB_URI")
 
 	if uri == "" {
@@ -169,11 +163,7 @@ func Check(Name, Day, Period string) {
 
 func DataProvider() {
 	Names = make([]string, 0)
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("load of the dotenv failed", err)
-		return
-	}
+
 	uri := os.Getenv("MONGODB_URI")
 	if uri == "" {
 		fmt.Println("URI is empty")
@@ -217,11 +207,7 @@ func DataProvider() {
 
 func Attendence(Name string) {
 	IsPresent = false
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Loading env failed", err)
-		return
-	}
+
 	uri := os.Getenv("MONGODB_URI")
 	if uri == "" {
 		fmt.Println("URI is empty")

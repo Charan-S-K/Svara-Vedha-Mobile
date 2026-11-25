@@ -474,13 +474,88 @@
       resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
+    // Timetable period definitions with boundary timings (in minutes from midnight)
+    const timetablePeriods = [
+      { value: "9:00-10:00", label: "Period 1 (9:00-10:00)", startMin: 540, endMin: 600 },
+      { value: "10:00-10:50", label: "Period 2 (10:00-10:50)", startMin: 600, endMin: 650 },
+      { value: "11:10-12:00", label: "Period 3 (11:10-12:00)", startMin: 670, endMin: 720 },
+      { value: "12:00-1:00", label: "Period 4 (12:00-1:00)", startMin: 720, endMin: 780 },
+      { value: "1:45-2:45", label: "Period 5 (1:45-2:45)", startMin: 825, endMin: 885 },
+      { value: "2:45-3:45", label: "Period 6 (2:45-3:45)", startMin: 885, endMin: 945 },
+      { value: "3:45-4:45", label: "Period 7 (3:45-4:45)", startMin: 945, endMin: 1005 }
+    ];
+
+    // Updates period options based on the selected day:
+    // When Today is selected: excludes completed periods, includes ongoing and future periods.
+    // When a future day is selected: includes all periods.
+    function updatePeriodDropdown() {
+      const selectedOption = daySelect.options[daySelect.selectedIndex];
+      const isToday = selectedOption && selectedOption.dataset.isToday === 'true';
+
+      const now = new Date();
+      const currentMin = now.getHours() * 60 + now.getMinutes();
+
+      const prevSelectedPeriod = periodSelect.value;
+      periodSelect.innerHTML = '<option value="">-- Select Period --</option>';
+
+      if (isToday) {
+        // Exclude completed (currentMin >= endMin)
+        // Include ongoing (currentMin >= startMin && currentMin < endMin) and future (currentMin < startMin)
+        const validPeriods = timetablePeriods.filter(p => currentMin < p.endMin);
+
+        if (validPeriods.length === 0) {
+          const opt = document.createElement('option');
+          opt.value = "";
+          opt.disabled = true;
+          opt.textContent = "-- No periods available today --";
+          periodSelect.appendChild(opt);
+          daySelect.classList.add('is-invalid');
+          showGenericMessage(
+            'Invalid Date Selection',
+            'All periods for today have completed. Please select a future day.',
+            'warning'
+          );
+          return;
+        }
+
+        validPeriods.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.value;
+          opt.textContent = p.label;
+          if (p.value === prevSelectedPeriod) {
+            opt.selected = true;
+          }
+          periodSelect.appendChild(opt);
+        });
+      } else {
+        timetablePeriods.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.value;
+          opt.textContent = p.label;
+          if (p.value === prevSelectedPeriod) {
+            opt.selected = true;
+          }
+          periodSelect.appendChild(opt);
+        });
+      }
+    }
+
+    // Helper to format local date YYYY-MM-DD without UTC / timezone shift
+    function formatLocalDate(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
     // Date selection initialization:
     // Dynamically determines current date, disables past days, and sets metadata for date comparisons.
     function setupDayDropdown() {
       const now = new Date();
-      // Normalized today at midnight for accurate date comparison
+      // Normalized today at midnight local time for accurate date comparison
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const currentDayOfWeek = now.getDay(); // 0 = Sunday, 1 = Mon, ..., 6 = Sat
+      const currentMin = now.getHours() * 60 + now.getMinutes();
 
       const timetableDays = [
         { key: 'mon', name: 'Monday', dayIndex: 1 },
@@ -503,19 +578,23 @@
         const targetDate = new Date(mondayDate);
         targetDate.setDate(mondayDate.getDate() + (day.dayIndex - 1));
 
-        // Use actual timestamp values for date comparison
+        // Use actual timestamp values for date comparison in local time
         const isPast = targetDate.getTime() < today.getTime();
         const isToday = targetDate.getTime() === today.getTime();
+        const allCompletedToday = isToday && timetablePeriods.every(p => currentMin >= p.endMin);
 
         const opt = document.createElement('option');
         opt.value = day.key;
-        opt.dataset.date = targetDate.toISOString().split('T')[0];
+        opt.dataset.date = formatLocalDate(targetDate);
         opt.dataset.isToday = isToday ? 'true' : 'false';
+        opt.dataset.isPast = isPast ? 'true' : 'false';
         opt.dataset.dayName = day.name;
 
-        if (isPast) {
+        if (isPast || allCompletedToday) {
           opt.disabled = true;
-          opt.textContent = `${day.name} (Past - Not Selectable)`;
+          opt.textContent = isPast
+            ? `${day.name} (Past - Not Selectable)`
+            : `${day.name} (Today - All Periods Completed)`;
         } else if (isToday) {
           opt.textContent = `${day.name} (Today)`;
         } else {
@@ -524,6 +603,8 @@
 
         daySelect.appendChild(opt);
       });
+
+      updatePeriodDropdown();
     }
 
     // Populate Teacher dropdown on page load
@@ -599,6 +680,7 @@
         }
       });
     });
+    daySelect.addEventListener('change', updatePeriodDropdown);
 
     // Handle Check Availability button click
     form.addEventListener('submit', async function (e) {
@@ -649,12 +731,12 @@
 
       // Validate selected date using actual Date values (prevent past day submission)
       const selectedOption = daySelect.options[daySelect.selectedIndex];
-      const selectedDateStr = selectedOption.dataset.date;
-      const selectedDate = new Date(selectedDateStr + 'T00:00:00');
+      const isPast = selectedOption.dataset.isPast === 'true';
+      const isToday = selectedOption.dataset.isToday === 'true';
       const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const currentMin = now.getHours() * 60 + now.getMinutes();
 
-      if (selectedDate.getTime() < today.getTime()) {
+      if (isPast) {
         daySelect.classList.add('is-invalid');
         showGenericMessage(
           'Invalid Date Selection',
@@ -664,8 +746,30 @@
         return;
       }
 
-      // Determine whether selected date is TODAY using actual Date comparison
-      const isToday = selectedDate.getTime() === today.getTime();
+      // If Today is selected, validate that ongoing or future periods are available
+      if (isToday) {
+        const allCompletedToday = timetablePeriods.every(p => currentMin >= p.endMin);
+        if (allCompletedToday) {
+          daySelect.classList.add('is-invalid');
+          showGenericMessage(
+            'Invalid Date Selection',
+            'All periods for today have completed. Please select a future day.',
+            'warning'
+          );
+          return;
+        }
+
+        const selectedPeriodObj = timetablePeriods.find(p => p.value === period);
+        if (selectedPeriodObj && currentMin >= selectedPeriodObj.endMin) {
+          periodSelect.classList.add('is-invalid');
+          showGenericMessage(
+            'Invalid Period Selection',
+            'This period has already ended. Please select an ongoing or upcoming period.',
+            'warning'
+          );
+          return;
+        }
+      }
       const dayName = selectedOption.dataset.dayName || selectedOption.text;
 
       isChecking = true;
